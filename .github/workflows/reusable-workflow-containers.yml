@@ -26,6 +26,28 @@ jobs:
           echo "version=$(jq -r '.version' containers/${{ inputs.image }}/config.json)" >>"${GITHUB_OUTPUT}"
           echo "registry=$(jq -r '.registry' containers/${{ inputs.image }}/config.json)" >>"${GITHUB_OUTPUT}"
 
+  run-tests:
+    name: Run python tests
+    if: contains(fromJSON('["daap-get-glue-metadata"]'), inputs.image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+          cache: pip
+          cache-dependency-path: containers/${{ inputs.image }}/tests/requirements.txt
+          
+      - name: Install test dependencies
+        run: python -m pip install -r requirements.txt
+        working-directory: containers/${{ inputs.image }}/tests/
+
+      - name: Run tests
+        run: pytest
+        working-directory: containers/${{ inputs.image }}/tests/unit/
+
   preflight-checks:
     if: github.ref != 'refs/heads/main'
     needs: [prepare-environment]
